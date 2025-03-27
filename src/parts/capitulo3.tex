@@ -1,0 +1,61 @@
+% ----------------------------------------------------------
+\chapter{Literature Review}
+% ----------------------------------------------------------
+
+This chapter presents a summary of current state of the art research and  works related to our proposed contributions with a focus on ITS and Cooperative Perception research.
+
+\section{Intelligent Transportation Systems}
+
+Within ITS applications, two big areas of research have have come to prominence. First, the current and future travel time prediction studies are helpful for route planning and traffic management. Second, there is a big number of studies on the construction of intelligent infrastructures, including smart cities, roadside devices, and IoT to improve communication performance and security. Other notable research is generally orthogonal to these two branches is also included to provide an overview of the field.
+
+For travel forecasting \cite{chen2022constructing} and \cite{bhatia2022intelligent}, evaluate AI algorithms and mathematical progressions to predict travel times. \cite{haydari2020deep} reviews extensive literature on deep learning technologies for travel time prediction. For most of these works, real-time data is crucial for an accurate answer. In line with this, \cite{liu2018development} and \cite{wang2021trusted} propose models or approaches for data collection ranging from installing devices in vehicles to using mobile sources for data generation and training of AI algorithms.
+
+An extensive review composed of 586 articles is done in \cite{kaffash2021big}. The article discusses big data algorithms and their applications in ITS, where the increasing amount of data requires advanced, data-driven approaches. The application of big data algorithms in ITS includes areas such as traffic flow prediction, travel time and route planning, and improving vehicle and road safety. Authors identify gaps in the field and show that the most used algorithms for ITS are based on deep learning methods.
+
+In contrast to the described above, the second research branch proposes architectures for developing an intelligent infrastructure. The research's primary focus is installing embedded devices on the roads. In \cite{zhu2018big}, a cheap embedded device to popularize ITS applications is proposed. Other works, such as \cite{wang2021trusted} and \cite{guillen2021intelligent, garg2018deep, liang2019deep}, propose using data from existing sources, such as the use of IoT systems, images from security cameras, and others.
+
+To further explore what can be achieved by a combination of modern technologies to improve ITS, \cite{dai2019artificial} investigates the applications of AI, edge computing, and caching technologies to improve the efficiency of ITS systems. RSUs are used to offload the computing closer to the network edge. The AI decision-making process provides a more efficient resource allocation and optimizes the network routing plan. With the inclusion of edge offloading and caching, latency and communication time are drastically reduced.
+
+In \cite{tanwar2019tactile} authors experiment with a non-orthogonal Multiple Access network to meet current industry and standards and government regulation. Authors model the end-to-end latency under the designed architecture and analyze the reliability concerning the interruption probability of the network. Statistical analysis is used to model different latency components including transmission, processing, and propagation latency. Results show that its possible, with a combination of wifi and 5g, to keep latency under 5ms.
+
+A survey on the latest advancements in Blockchain for IoV is done in \cite{Mollah_2021}. Authors evaluate the integration of of these technologies to address ITS communication challenges. The potential benefits of this combination are enhanced data security, increased reliability, and system transparency. While recognizing the promise of the convergence of blockchain and IoV in enriching the intelligence and security of transportation systems, it also highlights the existence of several practical adoption challenges that need to be overcome. These include issues related to scalability, energy consumption, privacy concerns, and lack of regulation.
+
+In \cite{bao2021review} authors define digital twin in transportation and its possible applications. Similarities and differences between traffic simulation and digital twin are discussed. The article explores modeling vehicle driving behavior and environment simulation with the Digital twin. A three layers architecture is proposed, including data access layer, calculation and simulation layer, management and application layer.
+
+Looking at the new 5G communication standard, \cite{gohar2021role} discusses the role it has in enhancing smart city functions, with a particular focus on ITS. It explains how 5G technologies are critical to realizing the concept of smart cities by providing high-speed connectivity, low latency, and the ability to handle a large number of connections. Particularly for ITS, the article discusses how 5G will enhance the interconnectivity of different transportation modes, improve traffic management, and increase overall transportation efficiency. 
+
+To further improve AV and ITS capabilities, \cite{elghazaly2023high} explores the use of High Definition maps. A review of the state of the art of HD maps uses in the various functions of autonomous driving systems is presented. Authors discuss the AV components relying on Map Data, like SLAM, scene understanding, motion prediction and planning modules and how HD maps can greatly improve AV capabilities. Furthermore, HD maps and GNSS data can be fused, offering robust and precise localization services to AVs.
+
+Considering the above articles, an important highlight is that at this moment there is no research on building virtual infrastructures that feed ITS and traffic management systems with AV data in real-time.
+
+\section{Cooperative Perception}
+
+
+In \cite{s22155535} the authors summarize multi-sensor fusion methods, communication technology, and shared perception strategies. The impact of communication cost and robustness of vehicle positioning errors is analyzed. The authors argue that to achieve autonomy levels above 3, it is necessary to leverage advanced sensing technology, edge computing, communication, and other technologies to build a cooperative perception system. This work also reinforces the idea that the future lies in V2X applications, supported by 5G communication technology.
+
+Another recent review took place in \cite{10208208}, the work summarizes the applications of multi-sensor fusion classification strategies in cooperative perception. It proposes a multi-sensor fusion taxonomy for autonomous driving perception and classifies fusion strategies into symmetric and asymmetric fusion with seven subcategories.
+
+\cite{xu2022v2xvit} examines the potential of V2X communication to enhance the perception performance of autonomous vehicles. The authors propose a novel vision Transformer architecture, called V2X-ViT, which combines data from multiple vehicles' Lidar sensors and achieves state-of-the-art performance results compared to similar techniques that employ intermediate fusion. The article considers both an ideal communication channel and a noisy setting, where pose error and time delay are both considered. No network-specific experiments were developed.
+
+In their work, the authors of \cite{Li_2023} address the issue of intermediate fusion in order to account for the possibility of Lossy Communication channels on V2V communications. The LC proposal is designed to accommodate real-world scenarios in which there are Doppler shifts introduced by fast-moving vehicles, interference generated by other communication networks, and dynamic topologies caused by routing failures as well as various weather conditions. 
+
+An additional work that attempts to address lossy communication scenarios is presented in \cite{ren2024interruptionaware}. Instead of implementing intermediate fusion, the authors develop a prediction model to extract multi-scale spatial-temporal features based on V2X communication conditions, thereby capturing the most significant information for the prediction of the missing information.
+
+In \cite{THANDAVARAYAN2023103655}, authors propose baseline mobility-based generation rules for cooperative perception messages with mechanisms to control the redundancy of the information and reduce channel overhead. The proposed techniques improve perception, reduce channel load, and enhance scalability for all cooperative perception communications.
+
+To Address offline datasets for AI model training, \cite{xu2023v2v4real} creates a dataset specifically for V2V cooperative perception research. Three cooperative perception tasks are introduced with benchmarks for model evaluation. According to the authors, biggest challenges in cooperative detection include GPS error, asynchronicity, and bandwidth limitation.
+
+In \cite{v2vformer} a multimodal transformer model is introduced for cooperative perception. This new model employs lidar and camera fusion from different vehicles to achieve SOTA cooperative perception performance. The transformer integrates point-based and voxel-based features into a single 3D representation.
+
+To address the some inherent challenges in cooperative perception such as the loss of semantic information, perception errors, \cite{song2024spatial} proposes improving vehicle pose calibration. An object association approach named context-based matching is used, which calibrates multi agents pose to improve shared perception precision. Object association precision is achieved with decimeter-level relative pose calibration accuracy.
+
+To further facilitate the development of research in the field, \cite{carletti2024ms} presents a new co simulation tool that allows physical and network simulations (integrates CARLA, OpenCDA, and ns-3). The framework facilitates analysis of  vehicular networks under various V2X technologies and enables evaluation of AIML-enabled autonomous driving applications leveraging realistic sensor data.
+
+In the topic of safety \cite{safety} proposes a method for expanding the field of view for autonomous vehicles by using edge infrastructure sensors (e.g. RSU systems). The "Infrastructure cooperative autonomous driving" system demonstrated an improvement in safety speed of 17\% and a reduction in collisions in simulated scenarios.
+
+Considering the large volume of sensor data generated recently by both autonomous vehicles and edge devices, \cite{10470399} proposes the use of a Spatial and Temporal Clustering algorithm which not only reduces the communication payload between vehicles by clustering perceived objects across AVs but also optimizes the use of communication resources. The work presents significant enhancement in the efficiency of vehicle-to-vehicle communication networks, increasing information reception by 10\% and reducing communication payload by approximately 41\% compared to previous ETSI standards.
+
+in \cite{cislaghi2023simulation}, authors have successfully integrated CARLA and Simu5G to simulate vehicle teleoperation. Vehicle sensor data was sent to a remote controller that would transmit steering and acceleration commands to the vehicle.
+
+Based on the above literature review, evidence suggests that ITS and Cooperative perception areas share a significant number of articles with parallel applications. For instance, in both fields there are articles that investigate the usage of algorithms and optimization of the communication channel for scalability purposes.
+

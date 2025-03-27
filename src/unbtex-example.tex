@@ -1,0 +1,448 @@
+%% 
+%% Template para Tese e Dissertação do Programa de Pós-Graduação em 
+%% Sistemas Mecatrônicos (PPMEC) da Universidade de Brasilia (UnB) 
+%% Adaptado de: 
+%% https://www.overleaf.com/latex/templates/unbtex-a-class-for-bachelor-master-and-doctoral-thesis-at-the-university-of-brasilia-unb/rfsxjkzprztc
+%%
+%% UnBTeX: A class for bachelor, master, and doctoral thesis at the
+%% University of Brasilia (UnB), Brazil
+%%
+%% Version 1.1.3 2022/09/04
+%% Copyright (C) 2021-2022 by Henrique C. Ferreira <hcferreira@unb.br>
+%%
+%% This class file may be distributed and/or modified under the conditions
+%% of the LaTeX Project Public License, either version 1.3 of this license
+%% or (at your option) any later version. The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3 or later is part of all distributions of LaTeX version
+%% 2005/12/01 or later.
+%%
+%% This file is a template for use with the UnBTex class
+%% To compile the document you should call pdflatex, biber, pdflatex
+%% 
+
+\documentclass[
+	% -- opções da classe memoir -- https://www.ctan.org/pkg/memoir
+	12pt,				% tamanho da fonte
+	openright,			% capítulos começam em página ímpar
+	                    % (insere página vazia caso preciso)
+	oneside,			% caso queira imprimir em frente e verso, use
+	%twoside,
+	a4paper,			% tamanho do papel.
+	% -- opções da classe abntex2 -- https://www.ctan.org/pkg/abntex2
+	%chapter=TITLE,		% títulos de capítulos convertidos em letras maiúsculas
+	%section=TITLE,		% títulos de seções convertidos em letras maiúsculas
+	%subsection=TITLE,	% títulos de subseções convertidos em letras maiúsculas
+	%subsubsection=TITLE,% títulos de subsubseções convertidos em letras maiúsculas
+	% -- opções do pacote babel --
+	english,			% idioma adicional para hifenização
+	brazil				% para trabalhos em inglês não é necessário alterar aqui
+	                    % altere o idioma após o comando \begin{document}
+	]{unbtex}
+
+% ---
+% Pacotes básicos (Adicione abaixo pacotes úteis para o seu trabalho)
+% ---
+
+% Pacote para desenho
+\usepackage{tikz}
+\usetikzlibrary{external,shapes,arrows,positioning}
+
+% Pacote para inline code
+\usepackage{minted}
+
+% Bibliografia nas normas da ABNT, formato autor-data (Pacote biblatex)
+% O formato autor-data facilita a leitura, sobretudo de trabalhos com muitas páginas
+% https://www.ctan.org/pkg/biblatex
+% https://ctan.org/pkg/biblatex-abnt
+\usepackage[style=abnt,backref=true,justify,indent,uniquename=init,giveninits,maxbibnames=99,extrayear,repeatfields,noslsn]{biblatex}
+\usepackage{csquotes} % Necessário para o pacote biblatex funcionar
+
+% Arquivos com as referências bibliográficas
+\addbibresource{parts/referencias.bib}
+\addbibresource{parts/references.bib}
+
+% ---
+% Compila o índice
+% ---
+\makeindex
+% ---
+
+% ---
+% Compila a nomenclatura
+% ---
+\makenomencl
+% ---
+
+% Diretório das figuras
+\graphicspath{{parts/figuras/}}
+% --- 
+
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+% Informações do trabalho
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+
+% Título (no idioma do texto)
+%\titulo{Título do Trabalho que \\ Pode Ocupar Varias Linhas e\\ Pode ser em Inglês ou Português} % insira \\ para forçar quebras de linha no título
+% Não utilize caixa alta para o título do trabalho e nem das seções (com exceção de siglas)
+% Em inglês caso o trabalho seja em inglês.
+\tituloestrangeiro{Simulating sensor data collection and shared perception for Autonomous Vehicles }
+% Obrigatório título em português caso o texto do trabalho seja em inglês (caso contrário, deixe vazio)
+
+% Autores
+\autori[]{Christian Moryah Contiero}{Miranda} % \autori[]{Nome}{Sobrenome}
+% No caso de nomes como Carlos de Souza, utilize \autori[]{Carlos de}{Souza} (e não \autori[]{Carlos}{de Souza})
+\autorii[]{}{} % deixe os argumentos vazios se não tiver segundo autor
+
+% Orientadores
+\orientador[Prof. Dr.]{João Paulo Javidi}{da Costa} % É possível alterar o gênero para orientadora mais abaixo, após o comando \begin{document}
+\coorientador[Prof. Dr.]{}{} % deixe os argumentos vazios se não tiver coorientador 
+% É possível alterar o gênero para coorientadora mais abaixo, após o comando \begin{document}
+
+% Tipo de trabalho
+\tipotrabalho{Dissertação de Mestrado} % Dissertação de Mestrado; Tese de Doutorado (em português, mesmo que o trabalho seja em inglês)
+\tipocurso{Programa de Pós-Graduação em Sistemas Mecatrônicos} % Programa de Pós-Graduação em Sistemas Mecatrônicos (em português, mesmo que o trabalho seja em inglês)
+\preambulo{Dissertação de Mestrado submetida ao Departamento de Engenharia Mecânica da Universidade Brasília como parte dos requisitos necessários para a obtenção do grau de Mestre} % Texto que aparece na folha de rosto e na folha de aprovação. Dissertação de Mestrado/Tese de Doutorado submetida ao Departamento de Engenharia Mecânica da Faculdade de Tecnologia da Universidade Brasília como parte dos requisitos necessários para a obtenção do grau de Mestre/Doutor. Use português mesmo que o trabalho seja em inglês.
+
+% Instituição
+\instituicao[Universidade de Brasília]{Faculdade de Tecnologia}{Departamento de Engenharia Mecânica}
+%\instituicao[Universidade de Brasília]{Faculdade de Tecnologia}{Departamento de Engenharia Mecânica} 
+% Use português mesmo que o trabalho seja em inglês.
+
+% Local e data
+\local{Brasília}
+\dia{30}
+\mes{março}
+\ano{2025}
+
+% Palavras-chave (pelo menos três devem ser informadas)
+\pchavei{Autonomous vehicles}
+\kwordi{Autonomous vehicles}
+\pchaveii{Traffic simulation}
+\kwordii{Traffic simulation}
+\pchaveiii{5G Radio Access Network}
+\kwordiii{5G Radio Access Network}
+\pchaveiv{Intelligent Transportation Systems} % deixar vazio se não tiver
+\kwordiv{Intelligent Transportation Systems} % deixar vazio se não tiver
+
+% Código Cutter para a ficha catalográfica:
+% A ficha catalográfica deve conter o código Cutter, que pode ser obtido com a ajuda de alguns sites da internet (por exemplo, https://cuttersonline.com/app/). O sobrenome do primeiro autor é associado a um número com dois ou três dígitos, que deve ser utilizado como argumento do comando \numerocutter presente no arquivo *.tex principal do relatório. No caso de nomes como Carlos de Souza, utilize 'Souza, Carlos de' (e não 'de Souza, Carlos') para gerar o código.
+% Quando compilar o arquivo, a ficha catalográfica gerada terá antes e depois do número de dois ou três dígitos, a primeira letra do sobrenome (em maiúsculo) e a primeira letra do título do trabalho (em minúscula), respectivamente.
+\numerocutter{769} % Correspondente à entrada: Lisboa, Carlos
+
+% Membros da banca
+\membrodabancai{Prof. Dr. João Paulo Javidi da Costa, Dr.-Ing., ENE/UnB, Hamm-Lippstadt University of Applied Sciences} % Membro 1 - Geralmente é o orientador, use a lotação do seu orientador 
+\membrodabancaifuncao{Orientador} % Em português mesmo que o trabalho seja em inglês.
+\membrodabancaii{Prof. Dr. José Alfredo Ruiz Vargas, ENE/UnB} % Membro 2 use lotação do avaliador UnB/FT/ENM, UnB/FGA, UnB/CIC, UnB/FT/ENE, etc
+\membrodabancaiifuncao{Examinador interno}
+\membrodabancaiii{Prof. Dr. Edison Pignaton de Freitas, Universidade Federal do Rio Grande do Sul, Instituto de Informatica} % Membro 3
+\membrodabancaiiifuncao{Examinador externo}
+\membrodabancaiv{Prof. Dr. Giovanni Almeida Santos, Hamm-Lippstadt University of Applied Sciences} % Membro 4
+\membrodabancaivfuncao{Suplente}
+\membrodabancav{} % deixar vazio se não tiver o quinto membro
+\membrodabancavfuncao{Suplente}
+% ---
+
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+% Início do documento
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+\begin{document}
+
+% Alterar para o idioma no qual o trabalho será escrito
+%\selectlanguage{brazil}
+\selectlanguage{english} % Para trabalhos escritos em inglês, é obrigatório conter um apêndice com resumo estendido em língua portuguesa.
+
+\IfStrEq*{\languagename}{brazil}{
+\thmnamebr
+\renewcommand{\bibname}{Referências}
+\renewcommand{\lstlistingname}{Código}
+\renewcommand{\orientadorname}{Orientador} % O gênero pode ser alterado para Orientadora
+\renewcommand{\coorientadorname}{Coorientador} % O gênero pode ser alterado para Coorientadora
+}{
+\thmnameen
+\renewcommand{\bibname}{References}
+\renewcommand{\lstlistingname}{Code}
+\renewcommand{\orientadorname}{Orientador} % O gênero pode ser alterado para Orientadora. Não alterar para Supervisor/Advisor, mesmo que o trabalho seja em inglês.
+\renewcommand{\coorientadorname}{Coorientador} % O gênero pode ser alterado para Coorientadora. Não alterar para Co-Supervisor/Co-Advisor, mesmo que o trabalho seja em inglês.
+}
+
+% ------------------------------------------------------------------------
+% ELEMENTOS PRÉ-TEXTUAIS
+% ------------------------------------------------------------------------
+\pretextual
+% ------------------------------------------------------------------------
+
+% ---
+% Insere capa
+% ---
+\imprimircapa
+% ---
+
+% ---
+% Insere folha de rosto
+% ---
+\imprimirfolhaderosto*
+% ---
+
+% ---
+% Insere ficha bibliográfica
+% ---
+\fichacatalografica
+% ---
+
+% ---
+% Insere folha de aprovação
+% ---
+\imprimirfolhadeaprovacao
+% ---
+
+% ---
+% Insere dedicatória (elemento opcional)
+% ---
+\begin{dedicatoria}
+   \centering
+   \vspace*{\fill}
+   
+   % Primeiro autor
+   \textit{To my loving family, whose support and belief in me have been my driving force. \\
+   To my friends and mentors who shared wisdom and encouragement.} \\
+   
+   \ifthenelse{\equal{\autoriinome}{}}{}{
+   \vspace{1cm}
+   \autorinome\ \autorisobrenome \\
+   \vspace*{\fill}
+   
+   % Segundo autor
+    \textit{Dedicatória do segundo autor.} \\
+   
+   \vspace{1cm}
+   \autoriinome\ \autoriisobrenome
+   }
+   \vspace*{\fill}
+\end{dedicatoria}
+% ---
+
+% ---
+% Insere agradecimentos (elemento opcional)
+% ---
+\begin{agradecimentos}
+
+% Primeiro autor
+I would like to express my gratitude to the University of Brasília for providing me with the opportunity to pursue my master's degree. The academic environment and resources helped me to "learn how to learn" and shaped my academic journey, enabling me to undertake this research.
+
+I am profoundly thankful to my thesis advisor, Professor Dr. João Paulo Javidi da Costa and my colleagues Dr. Antonio Silva, and Dr. Daniel Alves da Silva for their support, guidance, and insights throughout the research process. Their expertise and dedication to their respective fields have been a constant source of inspiration for me. Thank you for the constructive feedback and encouragement, this allowed me to refine my research and enhance the quality of this work.
+
+I am also indebted to my teachers for their contribution to my academic development. Their lectures, discussions, and mentorship were important to my knowledge and understanding of sensors, signal processing, robotics and neural networks.
+% ---
+
+\ifthenelse{\equal{\autoriinome}{}}{}{
+\vspace{1cm}
+\hfill \autorinome\ \autorisobrenome
+\vspace{1cm}
+
+% Segundo autor
+Agradecimentos do segundo autor.
+% ---
+
+\vspace{1cm}
+\hfill \autoriinome\ \autoriisobrenome
+}
+
+\end{agradecimentos}
+% ---
+
+% ---
+% Insere epígrafe (elemento opcional)
+% ---
+\begin{epigrafe}
+    \vspace*{\fill}
+	\begin{flushright}
+		\textit{``If you find that you're spending almost all your time on theory,\\ start turning some attention to practical things; \\ it will improve your theories.\\ If you find that you're spending almost all your time on practice, \\ start turning some attention to theoretical things; \\ it will improve your practice.''\\
+		(Donald Knuth)}
+	\end{flushright}
+\end{epigrafe}
+% ---
+
+% ---
+% Insere resumos
+% ---
+
+% % Resumo em português
+% \newcommand{\imprimirresumo}{
+% \newpage
+% \setlength{\absparsep}{18pt} % ajusta o espaçamento dos parágrafos do resumo
+% \begin{resumo}[Resumo]
+% % ---
+% Segundo a \textcite[seções 3.1-3.2]{NBR6028:2003}, o resumo deve ressaltar o objetivo, o método, os resultados e as conclusões do documento. A ordem e a extensão destes itens dependem do tipo de resumo (informativo ou indicativo) e do tratamento que cada item recebe no documento original. O resumo deve ser precedido da referência do documento, com exceção do resumo inserido no próprio documento. (\ldots) As palavras-chave devem figurar logo abaixo do resumo, antecedidas da expressão Palavras-chave: separadas entre si por ponto e finalizadas também por ponto.
+% % ---
+% \vspace{\onelineskip}
+
+% \noindent
+% \textbf{Palavras-chave}: \pchaveinome. \pchaveiinome. \pchaveiiinome. \ifthenelse{\equal{\pchaveivnome}{}}{}{\pchaveivnome.}
+% \end{resumo}}
+
+% Resumo em inglês
+\newcommand{\imprimirabstract}{
+\newpage
+\setlength{\absparsep}{18pt} % ajusta o espaçamento dos parágrafos do resumo
+\begin{resumo}[Abstract]
+\begin{otherlanguage*}{english}
+% ---
+% Intelligent Transportation Systems (ITS) have significantly improved transportation quality by using applications capable of monitoring, managing, and improving the transportation system. However, the large number of devices required to provide data to ITS applications has become a challenge in recent years, particularly the high installation and maintenance costs made broad deployment impracticable. Despite several advances in smart city research and the internet of things, research on ITS is still in the early stages. For example, data integration and reuse from different sources are not yet supported by the underlying infrastructure that provides data to ITS applications. In this sense, to improve data collection and maintenance strategies for ITS systems, this work proposes a virtual infrastructure model based on data reuse, mainly autonomous vehicle (AV) data, to support ITS applications. It presents design choices and challenges for deploying a virtual infrastructure based on B5G communication and data reuse, followed by developing a proof of concept of an AV data acquisition system evaluated through simulation. The results show that the extra data collection module results in a 0.5\% increase in total memory usage with direct sensor collection and a 5\% increase with application performance management (APM) data collection on the reference hardware. Autonomous vehicles data reuse can significantly improve ITS data challenges with minimal impact on current technology stack.
+
+Intelligent Transportation Systems (ITS) face significant challenges in data acquisition due to the high costs of infrastructure deployment and maintenance. This research explores the potential of autonomous vehicles (AVs) as mobile sensor platforms to create a virtual infrastructure that supplements traditional ITS data collection methods. Through a series of simulation experiments using the CARLA and Simu5G frameworks, this work evaluates the feasibility and impact of collecting and sharing sensor data from autonomous vehicles. Initial experiments demonstrate that adding a dedicated data collection module to vehicles results in minimal system overhead—only 1.1\% increased memory usage with direct sensor collection and 2.6\% with application performance management tools on reference hardware. Building on these findings, a simulation framework is developed to enable realistic modeling of sensor data collection, transmission over 5G networks, and cooperative perception among vehicles. Network simulations reveal that the bandwidth required for basic V2X communications (61.68 KB/s per vehicle, with low resolution sensor settings) consumes only 0.049\% of a 5G antenna's capacity, suggesting that a single antenna could theoretically support over 2000 vehicles simultaneously. The research extends to security considerations by developing simulations of spoofing attacks in three critical V2X scenarios, demonstrating how malicious actors can compromise vehicle safety through false data injection, and some countermeasures that can be done to prevent these kind of attacks. 
+% ---
+\vspace{\onelineskip}
+ 
+\noindent 
+\textbf{Keywords}: \kwordinome. \kwordiinome. \kwordiiinome. \ifthenelse{\equal{\kwordivnome}{}}{}{\kwordivnome.}
+\end{otherlanguage*}
+\end{resumo}}
+% ---
+
+\IfStrEq*{\languagename}{english}{
+\imprimirabstract
+\imprimirresumo}{
+\imprimirresumo
+\imprimirabstract}
+
+% ---
+% Insere lista de ilustrações
+% ---
+\pdfbookmark[0]{\listfigurename}{lof}
+\listoffigures*
+\cleardoublepage
+% ---
+
+% ---
+% Insere lista de tabelas
+% ---
+\pdfbookmark[0]{\listtablename}{lot}
+\listoftables*
+\cleardoublepage
+% ---
+
+% ---
+% Insere lista de abreviaturas e siglas
+% ---
+{\SingleSpacing
+%\setlength{\nomitemsep}{-\parsep}
+\printnomenclature[2cm]}
+\cleardoublepage
+% ---
+
+% ---
+% Insere o sumário
+% ---
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+% ---
+
+% ------------------------------------------------------------------------
+% ELEMENTOS TEXTUAIS
+% ------------------------------------------------------------------------
+\textual
+% ------------------------------------------------------------------------
+
+% ---
+% Capítulo de introdução
+% ---
+\include{parts/capitulo1}
+% ---
+
+% ---
+% Capítulo de fundamentos teóricos ou técnicos
+% ---
+\include{parts/capitulo2}
+% ---
+
+% ---
+% Capítulo com a proposta desenvolvida
+% ---
+\include{parts/capitulo3}
+% ---
+
+% ---
+% Capítulo de resultados
+% ---
+\include{parts/capitulo4}
+% ---
+
+% ---
+% Capítulo de conclusões
+% ---
+\include{parts/capitulo5}
+% ---
+
+% ------------------------------------------------------------------------
+% ELEMENTOS PÓS-TEXTUAIS
+% ------------------------------------------------------------------------
+\postextual
+% ------------------------------------------------------------------------
+
+% ---
+% Referências bibliográficas
+% ---
+
+\defbibheading{bibliography}[\bibname]{\chapter*{#1}}
+\cleardoublepage
+\phantomsection
+\tocprintchapternonum
+\addcontentsline{toc}{chapter}{\texorpdfstring{\MakeTextUppercase{\bibname}}{\bibname}}
+\printbibliography
+\markboth{}{}
+% ---
+
+%\defbibheading{bibliography}[\refname]{\section*{#1}\sectionmark{\refname}}
+
+% ---
+% Apêndices
+% ---
+
+\begin{apendicesenv}
+
+% % Imprime uma página indicando o início dos apêndices
+\partapendices
+
+\IfStrEq*{\languagename}{english}{
+% % ---
+% % Resumo estendido. ara trabalhos escritos em inglês, é obrigatório conter um apêndice com resumo estendido em língua portuguesa.
+% % ---
+% \include{parts/resumoestendido.tex} 
+% % ---
+}
+
+
+
+\include{parts/apendice-a.tex}
+
+% \include{parts/apendice-b}
+
+\end{apendicesenv}
+
+% ---
+
+% ---
+% Anexos
+% ---
+
+% \begin{anexosenv}
+
+% % Imprime uma página indicando o início dos anexos
+% \partanexos
+
+% \include{parts/anexo-a}
+
+% \include{parts/anexo-b}
+
+% \end{anexosenv}
+
+\end{document}

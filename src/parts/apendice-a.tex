@@ -1,0 +1,542 @@
+% ----------------------------------------------------------
+\chapter{Research Source Code}
+% ----------------------------------------------------------
+
+All the source code for the present research was developed with the intent of reuse to enable easier code setups and scaffolding for quickly iterable research scenarios. As an example, sensors abstractions were created where a single function call would add different sensor sets at any vehicle or pedestrians at the simulation scenarios. Another example is the network simulations, where it is now possible to add a sensor to a vehicle, already knowing that data on that sensor will be transmitted, with a small number of configuration parameters.
+
+The source code for the different research experiments is available in several github repositories (\url{https://github.com/av-data-research-group/carla-data-collection} for the first experiments, \url{https://github.com/carlanet/carlanetpp} for the network simulation framework and \url{https://github.com/aassilva/CarlaNetpp} for the network and attack experiments) and can be divided as following: 1. Code for data collection without network simulation; 2. Data collection with network simulation; 3. B5GCyberTestV2X code with interfaces for implementing vehicle control and data sharing funcionalities; 4. Spoofing attack scenarios experiment code; 5. Drone scenario generation.
+
+Below we transcribe some files in an attempt to share the most meaningful part of the source code. The first file is a simple demonstration of the data collection process with the CARLA simulator.
+
+\begin{lstlisting}[language=Python, caption={Basic starting code for a simple data collection example, using a single vehicle mounted with 2 cameras and a lidar sensor},label={code:starting}]
+
+import carla
+import random
+import time
+
+
+### Client
+
+client = carla.Client('localhost', 2000)
+
+client.set_timeout(10.0)
+world = client.get_world()
+
+# world.__dir__()
+for map_name in client.get_available_maps():
+    print(map_name)
+world.get_map().name
+
+# Load map
+world = client.load_world("Town10HD_Opt")
+
+# Get blueprint library and filter only cars
+vehicle_blueprints = world.get_blueprint_library().filter('*vehicle*')
+for idx, blueprint in enumerate(vehicle_blueprints):
+    print(idx, blueprint.id)
+    if idx == 10:
+        break
+
+### Add vehicle to world
+
+# Get maps spawn points
+spawn_points = world.get_map().get_spawn_points()
+
+# Tesla Cybertruck
+vehicle = world.try_spawn_actor(list(vehicle_blueprints)[26], random.choice(spawn_points))
+print(vehicle)
+
+vehicle_transform = vehicle.get_transform()
+vehicle_transform.location.z += 2.0
+world.get_spectator().set_transform(vehicle_transform)
+
+### Add sensors to car
+
+# time in seconds to collect data
+SENSOR_TICK = 3
+
+def get_cam_blueprint(world):
+    cam_bp = world.get_blueprint_library().find('sensor.camera.rgb')
+    cam_bp.set_attribute("image_size_x",str(400))
+    cam_bp.set_attribute("image_size_y",str(300))
+    cam_bp.set_attribute("fov",str(100))
+    cam_bp.set_attribute("sensor_tick",str(SENSOR_TICK))
+    return cam_bp
+
+
+def get_lidar_blueprint(world):
+    lidar_bp = world.get_blueprint_library().find('sensor.lidar.ray_cast')
+    lidar_bp.set_attribute('sensor_tick', str(SENSOR_TICK))
+    lidar_bp.set_attribute('channels', '64')
+    lidar_bp.set_attribute('points_per_second', '1120000')
+    lidar_bp.set_attribute('upper_fov', '30')
+    lidar_bp.set_attribute('range', '100')
+    lidar_bp.set_attribute('rotation_frequency', '100')
+    return lidar_bp
+
+camera_1_init_trans = carla.Transform(carla.Location(z=2.3))
+camera_2_init_trans = carla.Transform(carla.Location(z=2.3), carla.Rotation(yaw=180))
+lidar_init_trans = carla.Transform(carla.Location(z=3.0))
+
+# creates camera and attaches it to the vehicle
+camera_1_bp = get_cam_blueprint(world)
+camera_2_bp = get_cam_blueprint(world)
+camera_1 = world.spawn_actor(camera_1_bp, camera_1_init_trans, attach_to=vehicle)
+camera_2 = world.spawn_actor(camera_2_bp, camera_2_init_trans, attach_to=vehicle)
+camera_1.listen(lambda image: image.save_to_disk(f"sensors/camera_1/...{image.frame}.png"))
+camera_2.listen(lambda image: image.save_to_disk(f"sensors/camera_2/...{image.frame}.png"))
+
+# creates lidar and attaches it to the vehicle
+lidar_bp = get_lidar_blueprint(world)
+lidar = world.spawn_actor(lidar_bp, lidar_init_trans, attach_to=vehicle)
+lidar.listen(lambda data: data.save_to_disk(f'sensors/lidar/...{data.frame}.ply'))
+
+# Adds vehicle to Traffic manager
+vehicle.set_autopilot(True)
+
+# Faz o spectator seguir o carro
+spectator = world.get_spectator()
+while True:
+    transform = camera_1.get_transform()
+    transform.location.z += 2.0
+    spectator.set_transform(transform)
+    time.sleep(0.004)
+
+# Remove o carro da simulação
+vehicle.destroy()
+\end{lstlisting}
+
+The experiment code establishes a connection to the CARLA server running locally, allowing control of to the simulation. After connecting, it loads the high-definition urban environment "Town10HD\_Opt" and spawns a Tesla Cybertruck at a randomly selected spawn point. The script then configures and attaches multiple sensors to the vehicle: two RGB cameras positioned to capture front and rear views, and a high definition LiDAR sensor mounted on the roof. Each sensor is calibrated with specific parameters - the cameras are set with a 100 degree field of view and resolution of 400x300 pixels, while the LiDAR is configured with 64 channels, capturing 1.12 million points per second with a range of 100 meters. Please note that CPU and memory usage do scale with image and LIDAR definition.
+
+The script implements a data collection pipeline where sensor outputs are automatically saved to disk at regular 3-second intervals. Camera images are stored as PNG files, while Lidar point clouds are saved as PLY files, organizing them by sensor type and frame number. This approach allows the creation of datasets capturing the vehicle's perspective as it navigates through the environment. The vehicle's movement is controlled by CARLA's built-in Traffic Manager through the autopilot function, ensuring realistic traffic behavior while data is being collected.
+
+A spectator camera is programmed to follow the vehicle throughout the simulation, to provide the research team with a third-person view of the data collection process.
+
+The following code represents a piece of the network data transmission capabilites.
+
+\begin{lstlisting}[language=Python, caption={Simple data collection example, now using network simulation capabilities.},label={code:network}]
+import random
+import carla
+import datetime
+from carla import libcarla, ActorBlueprint
+import traceback
+
+from pycarlanet import CarlanetActor
+from pycarlanet import CarlanetManager
+from pycarlanet import CarlanetEventListener, SimulatorStatus
+
+import math
+import os
+import pandas as pd
+
+AUTO_PILOT = True
+NUM_VEHICLES = 0
+
+class B5GCyberTestV2X(CarlanetEventListener):
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.carlanet_manager = CarlanetManager(5555, self, log_messages=True)
+
+        self.client = self.sim_world = self.carla_map = None
+        self.carlanet_actors = dict()
+        self._car = None
+        self.remote_agent = RemoteAgent()
+
+    def start_simulation(self):
+        self.carlanet_manager.start_simulation()
+
+    def omnet_init_completed(self, run_id, carla_configuration, user_defined) -> (SimulatorStatus, World):
+        random.seed(carla_configuration['seed'])
+
+        print(f'OMNeT world is completed with the id {run_id}')
+        world = user_defined['carla_world']  # Retrieve from user_defined
+
+        client: libcarla.Client = carla.Client(self.host, self.port)
+        client.set_timeout(15)
+        sim_world = client.load_world("Town01")
+        #sim_world = client.load_world("Town10HD_Opt")
+        
+        settings = sim_world.get_settings()
+        
+        settings.synchronous_mode = False
+        settings.fixed_delta_seconds = None
+        settings.no_rendering_mode = False
+        settings.fixed_delta_seconds = carla_configuration['carla_timestep']
+
+        #sim_world.set_weather(carla.WeatherParameters.ClearNight)
+
+        sim_world.apply_settings(settings)
+        sim_world.tick()
+        
+        traffic_manager = client.get_trafficmanager()
+        traffic_manager.set_synchronous_mode(False)
+        traffic_manager.set_random_device_seed(
+            carla_configuration['seed']
+        )
+        sim_world.tick()
+
+        client.reload_world(False)  # Reload map keeping the world settings
+
+        sim_world.tick()
+        self.client, self.sim_world = client, sim_world
+        self.carla_map = self.sim_world.get_map()
+
+        return SimulatorStatus.RUNNING, self.sim_world
+
+    def actor_created(self, actor_id: str, actor_type: str, actor_config) -> CarlanetActor:
+        if actor_type == 'car':  # and actor_id == 'car_1':
+            blueprint: ActorBlueprint = random.choice(
+                self.sim_world.get_blueprint_library().filter(
+                    "vehicle.tesla.model3"
+                ))
+
+            spawn_points = self.sim_world.get_map().get_spawn_points()
+            # Attach sensors
+            spawn_point = random.choice(spawn_points)
+            print(blueprint)
+            response = self.client.apply_batch_sync(
+                [carla.command.SpawnActor(blueprint, spawn_point)]
+            )[0]
+            carla_actor: carla.Vehicle = self.sim_world.get_actor(response.actor_id)
+
+            carla_actor.set_simulate_physics(True)
+            if AUTO_PILOT:
+                carla_actor.set_autopilot(True)
+
+            carlanet_actor = CarlanetActor(carla_actor, True)
+            self.carlanet_actors[actor_id] = carlanet_actor
+            self._car = carlanet_actor
+
+            self.vehicle = carla_actor
+
+            self.sim_world.tick()
+
+            #camera_sensor = TeleCarlaCameraSensor(2.2)
+            #camera_sensor.attach_to_actor(self.sim_world, carla_actor)
+            self.actor_id = actor_id
+            
+            # send spectator to camera position
+            spectator = self.sim_world.get_spectator()
+            transform = self.vehicle.get_transform()
+            spectator.set_transform(transform)
+
+            if NUM_VEHICLES > 0:
+                vehicle_blueprints = self.sim_world.get_blueprint_library().filter(
+                    '*vehicle*'
+                )
+                for _ in range(NUM_VEHICLES):
+                    npc_vehicle = self.sim_world.try_spawn_actor(
+                        list(vehicle_blueprints)[38], random.choice(spawn_points)
+                    )
+                    if npc_vehicle is None:
+                        print("vehicle is none")
+                    else:
+                        npc_vehicle.set_autopilot(True)
+
+            return carlanet_actor
+        else:
+            raise RuntimeError(f'I don\'t know this type {actor_type}')
+
+
+    def carla_init_completed(self):
+        super().carla_init_completed()
+
+    def before_world_tick(self, timestamp) -> None:
+        super().before_world_tick(timestamp)
+
+    def carla_simulation_step(self, timestamp) -> SimulatorStatus:
+        self.sim_world.tick()
+        # Do all the things, save actors data
+        if timestamp > 100:  # ts_limit
+            return SimulatorStatus.FINISHED_OK
+        else:
+            return SimulatorStatus.RUNNING
+
+    # get light control enum from int value
+    @staticmethod
+    def _str_to_light_control_enum(light_value):
+        if light_value == '0':
+            return carla.VehicleLightState.NONE
+        elif light_value == '1':
+            return carla.VehicleLightState.Position
+        elif light_value == '2':
+            return carla.VehicleLightState.Brake
+        else:
+            return carla.VehicleLightState.All
+        
+    # get int value from light control enum
+    @staticmethod
+    def _light_control_enum_to_str(light_enum):
+        if light_enum == carla.VehicleLightState.NONE:
+            return '0'
+        elif light_enum == carla.VehicleLightState.Position:
+            return '1'
+        elif light_enum == carla.VehicleLightState.Brake:
+            return '2'
+        else:
+            return '3'
+        
+    
+
+    
+    def standard_message(self, timestamp, user_defined_message) -> (SimulatorStatus, dict):
+        # Handle the action of the actors in the world (apply_commands, calc_instruction)
+        # es: apply_commands with id command_12 to actor with id active_actor_14
+        if user_defined_message['msg_type'] == 'LIGHT_COMMAND':
+            
+            #convert enum value to enum
+            next_light_state = self._str_to_light_control_enum(
+                user_defined_message['light_next_state']
+            )
+            self._car.set_light_state(next_light_state)
+
+            msg_to_send = {'msg_type': 'LIGHT_UPDATE',
+                           'light_curr_state': self._light_control_enum_to_str(
+                               self._car.get_light_state())    
+                            }
+            
+            print("LIGHT CURR STATE: ", self._car.get_light_state(), '\n\n')
+            return SimulatorStatus.RUNNING, msg_to_send
+        
+        elif user_defined_message['msg_type'] == 'LIGHT_UPDATE':
+            curr_light_state = self._str_to_light_control_enum(
+                user_defined_message['light_curr_state']
+            )
+            next_light_state = self.remote_agent.calc_next_light_state(
+                curr_light_state
+            )
+            print("LIGHT CURR STATE: ", curr_light_state, "LIGHT NEXT STATE: ", next_light_state, '\n')
+
+            msg_to_send = {'msg_type': 'LIGHT_COMMAND',
+                           'light_next_state': self._light_control_enum_to_str(
+                                next_light_state
+                            )
+                           }
+            
+            # GET locations and speed and save it to csv
+            print("#" * 50)
+            print("getting sensor data from car")
+            self.remote_agent.process_vehicle_data(self.vehicle, self.carlanet_actors)
+
+            ### CONTROL STAGE
+            if not AUTO_PILOT:
+                pass
+
+            # send spectator to camera position
+            spectator = self.sim_world.get_spectator()
+            transform = self.vehicle.get_transform()
+            spectator.set_transform(transform)
+
+            return SimulatorStatus.RUNNING, msg_to_send
+        else:
+            raise RuntimeError(f"I don\'t know this type {user_defined_message['msg_type']}")
+
+    def simulation_finished(self, status_code: SimulatorStatus):
+        super().simulation_finished(status_code)
+
+    def simulation_error(self, exception):
+        traceback.print_exc()
+        super().simulation_error(exception)
+
+
+class RemoteAgent:
+
+    def __init__(self):
+        self.light_state = carla.VehicleLightState.NONE
+
+    def calc_next_light_state(self, light_state: carla.VehicleLightState):
+        return carla.VehicleLightState.NONE
+    
+    def generate_carla_nodes_positions(self, carlanet_actors):
+        nodes_positions = []
+        for actor_id, actor in carlanet_actors.items():
+            transform: carla.Transform = actor.get_transform()
+            velocity: carla.Vector3D = actor.get_velocity()
+            position = dict()
+            position['actor_id'] = actor_id
+            position['position'] = [transform.location.x, transform.location.y, transform.location.z]
+            position['rotation'] = [transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]
+            position['velocity'] = [velocity.x, velocity.y, velocity.z]
+            position['is_net_active'] = actor.alive
+            nodes_positions.append(position)
+        return nodes_positions
+
+    def process_vehicle_data(self, vehicle, carlanet_actors):
+        file_name = f"sensors_high_traffic/gnss/vehicle-id-{vehicle.id}.csv"
+
+        if not os.path.exists(f"sensors_high_traffic/gnss/"):
+            os.makedirs(f"sensors_high_traffic/gnss/")
+
+        positions_obj = self.generate_carla_nodes_positions(carlanet_actors)[0]
+        x_speed = positions_obj["velocity"][0]
+        y_speed = positions_obj["velocity"][1]
+        z_speed = positions_obj["velocity"][2]
+        speed = math.sqrt(x_speed**2 + y_speed**2 + z_speed**2)
+        current_time = datetime.datetime.now()
+
+        save_obj = [{
+            "id": vehicle.id,
+            "timestamp": str(current_time),
+            "lat": positions_obj["position"][0],
+            "long": positions_obj["position"][1],
+            "alt": positions_obj["position"][2],
+            "speed": speed
+        }]
+
+        if os.path.exists(file_name):
+            df = pd.read_csv(file_name)
+        else:
+            df = None
+
+        df_new_data = pd.DataFrame.from_dict(save_obj)
+
+        if df is None:
+            df_new_data.to_csv(file_name, index=False)
+        else:
+            df = pd.concat([df, df_new_data])
+            df.to_csv(file_name, index=False)
+
+
+if __name__ == '__main__':
+    my_world = B5GCyberTestV2X('localhost', 2000)
+    my_world.start_simulation()
+\end{lstlisting}
+
+This code implements a more advanced CARLA simulation that integrates with OMNET++/SIMU5G for network simulation capabilities. The architecture creates a bridge between two simulators: CARLA handles the vehicle physics, sensors, and urban environment, while SIMU5G/OMNET++ simulates 5G network communication between vehicles and infrastructure. The integration is managed through a custom CarlanetManager class that keeps the two simulators synced.
+
+The main controller class, B5GCyberTestV2X, implements the CarlanetEventListener interface to set up the simulation environment and handle event callbacks between CARLA and OMNET++. It connects to the CARLA server on localhost, initializes a CarlanetManager for communicating with OMNET++, and sets up synchronization between the simulators with configurable timesteps. Unlike the previous code that used Town10HD\_Opt, this implementation loads the simpler Town01 map and configures traffic manager and weather settings accordingly.
+
+For vehicle management, the code creates a Tesla Model 3 (instead of the Cybertruck in the previous example), places it at a random spawn point, and optionally enables autopilot through the AUTO\_PILOT flag. It can also spawn additional NPC vehicles based on the NUM\_VEHICLES setting. The network-vehicle integration is handled through a messaging system that supports two main message types: LIGHT\_COMMAND for controlling vehicle lights based on network commands, and LIGHT\_UPDATE for reporting the current light state back to the network.
+
+Data collection is managed by the RemoteAgent class, which gathers vehicle telemetry data including position, velocity, and rotation. This data is saved to CSV files in a structured directory format, with each vehicle's information stored in a separate file with timestamps. The simulation maintains synchronization by having each simulator wait for the other before advancing to the next time step.
+
+The key differences from the basic code include network integration through OMNET++/SIMU5G, more structured data collection with CSV storage, an event-based architecture using listeners for inter-simulator communication, and a more sophisticated vehicle control mechanism that can receive commands over the network. This implementation represents system where vehicle behavior can be influenced by network communications.
+
+The next piece of code represents one of the use cases with data collection, now with the network and communication already abstracted in utility objects:
+
+\begin{lstlisting}[language=Python, caption={Example Use case where data is collected from 3 cars and a drone may be used to perform attacks to the communication channels},label={code:use-case}]
+import carla
+import time
+
+BAD_SCENARIO = True
+
+from utils import (
+    attach_all_sensors
+)
+
+def set_spectator(vehicle):
+    spectator = world.get_spectator()
+    transform = vehicle.get_transform()
+    transform.location.z += 2.0
+    spectator.set_transform(transform)
+
+# entity used to preserve sensors in scope
+simulation_actors = {}
+
+client = carla.Client('localhost', 2000)
+client.set_timeout(10.0)
+
+# world = client.get_world()
+world = client.load_world("Town01")
+world.set_weather(carla.WeatherParameters.CloudyNoon)
+
+time.sleep(5)
+
+# Get blueprint library and filter only cars
+# vehicle_blueprints = world.get_blueprint_library().filter('*vehicle*')
+cyber_blueprints = world.get_blueprint_library().filter('vehicle.tesla.cybertruck')
+c3_blueprints = world.get_blueprint_library().filter('vehicle.citroen.c3')
+model_3_blueprints = world.get_blueprint_library().filter('vehicle.tesla.model3')
+#drone_blueprint = world.get_blueprint_library().filter('vehicle.micro.microlino')[0]
+drone_blueprint = world.get_blueprint_library().filter('vehicle.drone.drone1')[0]
+
+# Get maps spawn points
+spawn_points = world.get_map().get_spawn_points()
+
+camera_init_trans = carla.Transform(carla.Location(z=2.7,x=1.0))
+back_camera_init_trans = carla.Transform(carla.Location(z=2.7), carla.Rotation(yaw=180))
+lidar_init_trans = carla.Transform(carla.Location(z=3.0))
+
+# wanted positions: 181, 183, 177, 219
+# wanted positions other lane: 65, 163
+
+blueprint_list = [
+    list(cyber_blueprints)[0],
+    list(c3_blueprints)[0],
+    list(model_3_blueprints)[0],
+]
+selected_locations = [181, 177, 163]
+hero_list = []
+for idx, location in enumerate(selected_locations):
+    hero_n = world.try_spawn_actor(blueprint_list[idx], spawn_points[location])
+    simulation_actors[f"vehicle_{hero_n.id}"] = hero_n
+    if BAD_SCENARIO and idx == 2:
+        attach_all_sensors(world, hero_n, simulation_actors, drone_attack=True)
+    else:
+        attach_all_sensors(world, hero_n, simulation_actors)
+    hero_list.append(hero_n)
+
+
+# set_spectator(hero_list[0])
+print("Simulation actors:", simulation_actors)
+
+if BAD_SCENARIO:
+    # Malicious Drone
+    drone_location = carla.Location(x=392.791443, y=107.608482, z=14.855516)
+    drone_rotation = carla.Rotation(pitch=-27.212101, yaw=-89.532944, roll=-0.025725)
+    drone_spawn_point = carla.Transform(drone_location, drone_rotation)
+    drone_1 = world.try_spawn_actor(drone_blueprint, drone_spawn_point)
+    drone_1.set_simulate_physics(False)
+
+
+tm = client.get_trafficmanager()
+tm_port = tm.get_port()
+
+for hero_n in hero_list:
+    hero_n.set_autopilot(True, tm_port)
+
+if BAD_SCENARIO:
+    tm.distance_to_leading_vehicle(hero_list[0], 0)
+    tm.vehicle_percentage_speed_difference(hero_list[0], -80)
+    tm.vehicle_percentage_speed_difference(hero_list[1], -75)
+    tm.vehicle_percentage_speed_difference(hero_list[2], -80)
+    tm.collision_detection(hero_list[0], hero_list[2], False)
+    tm.collision_detection(hero_list[0], hero_list[1], False)
+    tm.collision_detection(hero_list[2], hero_list[0], False)
+
+spectator = world.get_spectator()
+# Camera take - drone view
+# spec_location = carla.Location(x=389.039062, y=102.294785, z=19.252405)
+# spec_rotation = carla.Rotation(pitch=-31.561518, yaw=73.702972, roll=-0.018310)
+# spectator.set_transform(carla.Transform(spec_location, spec_rotation))
+
+# Camera take - lateral view
+spec_location = carla.Location(x=377.332733, y=125.954506, z=35.793575)
+spec_rotation = carla.Rotation(pitch=-54.568348, yaw=-0.546539, roll=-0.018311)
+spectator.set_transform(carla.Transform(spec_location, spec_rotation))
+
+starting_time = time.time()
+print("current time", starting_time)
+triggered = False
+while True:
+    # transform = camera_1.get_transform()
+    # # transform.location.z += 1.0
+    # spectator.set_transform(transform)
+    time.sleep(0.1)
+
+    ## DATA COLLECTION HAPPENS AUTOMATICALLY DURING THIS LOOP
+
+    # find out locations
+    spectator = world.get_spectator()
+    print(spectator.get_transform())
+\end{lstlisting}
+
+This code creates a more scenario-focused CARLA simulation designed to test specific traffic situations, particularly centered around a potential malicious attack scenario. The implementation begins by connecting to a local CARLA server and loading the "Town01" map with cloudy noon weather conditions, allowing time for the world to properly initialize.
+
+Rather than using random vehicles, this scenario have specific vehicle models - a Tesla Cybertruck, Citroen C3, and Tesla Model 3. The vehicles are placed at predetermined spawn points for reproducibility reasons (positions 181, 177, and 163) to create a controlled traffic scenario. Each vehicle is added to a "simulation\_actors" dictionary to maintain references and has sensors attached through the abstracted "attach\_all\_sensors" function, with special configuration for the third vehicle when the BAD\_SCENARIO flag is enabled.
+
+We then implement a potentially hazardous situation when BAD\_SCENARIO is set to true. In this case, a drone actor is positioned at specific coordinates above the road and configured not to simulate physics (remaining stationary). The traffic manager is then set up with aggressive parameters: following distance for the first vehicle is minimized, all vehicles are instructed to drive much faster than normal, and collision detection between specific vehicle pairs is deliberately disabled.
+
+The simulation's viewpoint is precisely positioned using a spectator camera at coordinates that provide a lateral view of the upcoming scenario. If the BAD\_SCENARIO is set to true, the drone will change the data that reaches vehicle 2 (the one trying to do the outtake in the road), making the data arrive with a big delay. With no visibility, vehicle 2 tries to outtake vehicle 1 and ends up coliding with vehicle 3.
+
