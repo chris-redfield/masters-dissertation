@@ -1,6 +1,6 @@
 # Simulating Sensor Data Collection and Shared Perception for Autonomous Vehicles
 
-This repository contains the code and documentation for a Master's dissertation project completed at the Universidade de Brasília (UnB) in 2025.
+This repository contains the documentation for my Master's dissertation project completed at the Universidade de Brasília (UnB) in 2025.
 
 ## Project Overview
 
